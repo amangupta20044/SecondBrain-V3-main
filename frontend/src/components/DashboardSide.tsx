@@ -785,18 +785,26 @@ const Dashboard = ({
 
   const [isClear , setIsClear]= useState(false)
 
-  const handleSearch = async()=>{
-    
+  const handleSearch = async () => {
+    if (!searchVal || !searchVal.trim()) return;
+    const userData = localStorage.getItem("user")
+      ? JSON.parse(localStorage.getItem("user") || "{}")
+      : null;
+    const userID = userData ? userData.id : null;
     try {
-      
-      const res = await axios.post(ApiRoutes.search, {query : searchVal})
-      console.log(res)
-      setCardData(res.data)
-      setIsClear(true)
+      const res = await axios.post(ApiRoutes.search, {
+        query: searchVal.trim(),
+        userId: userID,
+      });
+      console.log("Search results:", res.data);
+      if (Array.isArray(res.data)) {
+        setCardData(res.data);
+      }
+      setIsClear(true);
     } catch (error) {
-      console.log(error)
+      console.log("Search error:", error);
     }
-  }
+  };
 
   const handleClearSearch = async()=>{
     const userData = localStorage.getItem("user")
@@ -902,7 +910,7 @@ const Dashboard = ({
                         Paste link before you find interesting
                       </p>
                       <p className="text-gray-400 text-sm text-center">
-                        *NOTE: This only support{" "}
+                        *NOTE: This support{" "}
                         <a href="https://x.com" target="_blank">
                           {" "}
                           <span className="text-purple-200 italic">tweet</span>
@@ -913,6 +921,16 @@ const Dashboard = ({
                             youtube
                           </span>
                         </a>{" "}
+                         <a href="https://x.com" target="_blank">
+                          and{" "}
+                          <span className="text-purple-200 italic">links</span>
+                        </a>{" "}
+                        {/* and{" "}
+                        <a href="https://youtube.com" target="_blank">
+                          <span className="text-purple-200 italic">
+                            
+                          </span>
+                        </a>{" "} */}
                         link for now{" "}
                       </p>
                       <button

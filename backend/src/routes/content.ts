@@ -60,34 +60,67 @@ contentRouter.post("/create", async (req: Request, res: Response) => {
     }
 })
 
-contentRouter.post("/search" , async(req: Request , res:Response)=>{
-    {
-        try {
-            const {query} = req.body
+contentRouter.post("/search", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { query, userId } = req.body;
 
-           if(!query) return
-            console.log(query)
-           const queryEmbedding = await generateEmbeddings(query)
-           console.log(queryEmbedding)
-
-           const results = await ContentModel.aggregate([
-            {
-                $vectorSearch: {
-                    queryVector: queryEmbedding,
-                    path: "embeddings",
-                    numCandidates: 100,
-                    limit: 2,
-                    index: "vector_index"
-                }
-            }
-        ]);
-           console.log(results)
-           res.status(200).json(results)
-        } catch (error) {
-            res.status(500).json({message:"Search Failed"})
+        if (!query || typeof query !== "string" || !query.trim()) {
+            res.status(400).json({ message: "Search query is required" });
+            return;
         }
+
+        const trimmedQuery = query.trim();
+
+        // 1. Attempt vector search if OPENAI_API_KEY is configured
+        if (process.env.OPENAI_API_KEY) {
+            try {
+                const queryEmbedding = await generateEmbeddings(trimmedQuery);
+                const results = await ContentModel.aggregate([
+                    {
+                        $vectorSearch: {
+                            queryVector: queryEmbedding,
+                            path: "embeddings",
+                            numCandidates: 100,
+                            limit: 20,
+                            index: "vector_index"
+                        }
+                    }
+                ]);
+
+                if (results && results.length > 0) {
+                    res.status(200).json(results);
+                    return;
+                }
+            } catch (vectorErr) {
+                console.warn("Vector search unavailable, falling back to text regex search:", vectorErr);
+            }
+        }
+
+        // 2. Fallback to Regex Text Search across title, description, and link
+        const regexPattern = new RegExp(trimmedQuery, "i");
+        const filter: any = {
+            $or: [
+                { title: { $regex: regexPattern } },
+                { description: { $regex: regexPattern } },
+                { link: { $regex: regexPattern } }
+            ]
+        };
+
+        if (userId) {
+            filter.userId = userId;
+        }
+
+        const textResults = await ContentModel.find(filter).populate({
+            path: "tags",
+            select: "title"
+        });
+
+        res.status(200).json(textResults);
+    } catch (error) {
+        console.error("Search failed:", error);
+        res.status(500).json({ message: "Search Failed", error: String(error) });
     }
-})
+});
 
 contentRouter.post("/summarize" , async (req: Request, res: Response): Promise<void> => {
     try {

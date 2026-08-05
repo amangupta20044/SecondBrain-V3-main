@@ -1,121 +1,147 @@
 import { Request, Response, Router } from "express";
 import { z } from "zod";
-import bcryptjs from "bcryptjs" 
-import jwt from "jsonwebtoken"
+import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { ContentModel, UserModel } from "../db/db";
-import userMiddleware from "../middleware/middleware";
-const USER_JWT_SECRET = process.env.USER_JWT_SECRET || "randomjwtsecret"
+import userMiddleware, { CustomRequest } from "../middleware/middleware";
 
-
+const USER_JWT_SECRET = process.env.USER_JWT_SECRET || "randomjwtsecret";
 
 const userRouter = Router();
 
 userRouter.get("/test", (req: Request, res: Response) => {
-    res.json({
-        message: "testing route for user"
-    })
-})
+  res.json({
+    message: "User route operational"
+  });
+});
 
-userRouter.post("/signup", async (req: Request, res: Response) => {
+userRouter.post("/signup", async (req: Request, res: Response): Promise<void> => {
+  const requiredBody = z.object({
+    email: z.string().email("Invalid email format").max(100),
+    password: z.string().min(6, "Password must be at least 6 characters").max(100),
+    username: z.string().min(1, "Username is required").max(50),
+  });
 
-    const requiredBody = z.object({
-        email: z.string().min(1).max(100),
-        password: z.string().min(6).max(100),
-        username: z.string().min(1).max(50),
-    })
+  const parsedData = requiredBody.safeParse(req.body);
+  if (!parsedData.success) {
+    res.status(400).json({
+      message: "Invalid request payload",
+      errors: parsedData.error.errors
+    });
+    return;
+  }
 
-    const parsedData = requiredBody.safeParse(req.body);
-    if (!parsedData.success) {
-        res.status(400).json({
-            message: "Invalid request data",
-            errors: parsedData.error.errors
-        });
-        return;
+  const { username, email, password } = req.body;
+
+  try {
+    const existingUser = await UserModel.findOne({
+      $or: [{ email: email.toLowerCase() }, { username }]
+    });
+
+    if (existingUser) {
+      res.status(409).json({
+        message: "Account with this email or username already exists."
+      });
+      return;
     }
 
-    const { username, email, password } = req.body
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    const newUser = await UserModel.create({
+      email: email.toLowerCase(),
+      username,
+      password: hashedPassword
+    });
 
-    try {
-        const hashedPassword = await bcryptjs.hash(password, 5);
-        console.log(hashedPassword);
-        await UserModel.create({
-            email,
-            username,
-            password: hashedPassword
-        })
-        res.json({
-            message: "user signed up successfully"
-        })
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email
+      }
+    });
+  } catch (error: any) {
+    console.error("Signup error:", error);
+    res.status(500).json({
+      message: "Internal server error during user creation"
+    });
+  }
+});
 
-    } catch (error) {
-        res.status(400).json({
-            message: "User already exists or something went wrong!",
-            error: error
-        })
+userRouter.post("/signin", async (req: Request, res: Response): Promise<void> => {
+  const requiredBody = z.object({
+    username: z.string().min(1, "Username is required"),
+    password: z.string().min(1, "Password is required")
+  });
+
+  const parsedData = requiredBody.safeParse(req.body);
+  if (!parsedData.success) {
+    res.status(400).json({
+      message: "Username and password are required",
+      errors: parsedData.error.errors
+    });
+    return;
+  }
+
+  const { username, password } = req.body;
+
+  try {
+    const user = await UserModel.findOne({ username });
+    if (!user || !user.password) {
+      res.status(401).json({
+        message: "Invalid username or password"
+      });
+      return;
     }
-})
 
-
-userRouter.post("/signin", async (req: Request, res: Response) => {
-    const username = req.body.username;
-    const password = req.body.password;
-
-    const user = await UserModel.findOne({
-        username: username
-    })
-    if (!user) {
-        res.status(403).json({
-            message: "user not found"
-        })
-        return
+    const passCheck = await bcryptjs.compare(password, user.password);
+    if (!passCheck) {
+      res.status(401).json({
+        message: "Invalid username or password"
+      });
+      return;
     }
-    const passCheck = user.password ? bcryptjs.compare(password, user.password) : false
-    if (passCheck) {
-        const token = jwt.sign({
-            id: user._id.toString()
-        }, USER_JWT_SECRET)
-        console.log("token" + token)
-        res.status(200).json({
-            token: token,
-            user: {
-                "id": user._id,
-                "username": user.username,
-                "email": user.email
-            }
-        })
-    } else {
-        res.status(400).json({
-            message: "incorrect credentials"
-        })
+
+    const token = jwt.sign(
+      { id: user._id.toString() },
+      USER_JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    });
+  } catch (error: any) {
+    console.error("Signin error:", error);
+    res.status(500).json({
+      message: "Internal server error during authentication"
+    });
+  }
+});
+
+userRouter.get("/contents", userMiddleware, async (req: CustomRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.query.userID || req.user?.userId;
+    if (!userId) {
+      res.status(400).json({ message: "User ID parameter required" });
+      return;
     }
-})
 
-interface User {
-    _id: string;
-    username: string;
-    email: string
-}
+    const content = await ContentModel.find({ userId }).populate({
+      path: "tags",
+      select: "title"
+    });
 
-interface customRequest extends Request {
-    user?: User
-}
+    res.status(200).json(content);
+  } catch (error: any) {
+    console.error("Fetch contents error:", error);
+    res.status(500).json({ message: "Internal server error fetching user content" });
+  }
+});
 
-userRouter.get('/contents', userMiddleware, async (req: customRequest, res: Response) => {
-    try {
-        // const userId = req.user?._id
-        const userId= req.query.userID
-        console.log("content")
-        console.log(userId)
-        const content = await ContentModel.find({ userId: userId }).populate({
-            path: "tags",
-            select: "title"
-        })
-        res.status(200).json(content)
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ message: "Internal Server Error" });
-        return;
-    }
-})
-
-export default userRouter
+export default userRouter;

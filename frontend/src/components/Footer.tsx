@@ -9,7 +9,7 @@ export default function Footer () {
               className='underline hover:text-white transition-colors'
               target="_blank"
             >
-              Kanak
+              AMAN
             </a>
           </p>
         </footer>
