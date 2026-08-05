@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build & Output
+dist/
+*.zip
+*.crx
+*.pem
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
