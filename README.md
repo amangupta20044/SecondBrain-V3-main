@@ -25,6 +25,52 @@ Modern internet users consume hundreds of articles, research papers, YouTube vid
 
 ---
 
+## 📦 Download Chrome Extension
+
+You can download and install the **SecondBrain Chrome Extension** using either of the following two options:
+
+1. **Pre-built Extension ZIP (Recommended)**: Download the latest pre-built `secondbrain-extension.zip` directly from [GitHub Releases](https://github.com/amangupta20044/SecondBrain-V3-main/releases).
+2. **Build from Source Code**: Clone this repository and compile the extension locally using Node.js and Vite.
+
+> ℹ️ **Note for End Users**:
+> - The Chrome Extension connects directly out-of-the-box to the deployed production cloud backend (`https://secondbrain-v3-main.onrender.com`).
+> - You do **NOT** need to run a local backend server.
+> - You do **NOT** need Node.js installed if you download the pre-built extension ZIP.
+> - You do **NOT** need to clone the full repository if you download the pre-built extension ZIP.
+
+---
+
+## 🧩 Install the Chrome Extension (Developer Mode)
+
+Follow these step-by-step instructions to manually load the extension into Google Chrome:
+
+> [!IMPORTANT]
+> If you are building from the source code instead of using the pre-built ZIP release, you must build the extension bundle first:
+> ```bash
+> cd frontend/chrome-extension
+> npm install
+> npm run build
+> ```
+> This creates the compiled extension files inside `frontend/chrome-extension/dist/`.
+
+### Installation Steps:
+
+1. **Download the Extension**: Download `secondbrain-extension.zip` from GitHub Releases or build the extension from source code.
+2. **Extract the ZIP**: Unzip the downloaded file into a folder on your computer (e.g. `secondbrain-extension/`).
+3. **Open Google Chrome**: Launch Chrome on your computer.
+4. **Open Extensions Page**: Navigate to the extensions manager by typing this URL into your address bar:
+   ```text
+   chrome://extensions
+   ```
+5. **Enable Developer Mode**: Turn **ON** the **Developer mode** toggle switch in the top-right corner of the Extensions page.
+6. **Click "Load unpacked"**: Click the **Load unpacked** button located in the top-left corner of the page.
+7. **Select the Extension Folder**: Browse to and select the extracted `dist` (or `secondbrain-extension`) folder.
+8. **Pin to Toolbar**: Click the **Puzzle icon 🧩** in the Chrome toolbar and pin **SecondBrain** for easy access.
+9. **Open Extension**: Click the **SecondBrain** extension icon in your browser toolbar.
+10. **Sign In or Sign Up**: Log in with your account (or create a new account) to start saving web pages, YouTube videos, and tweets instantly!
+
+---
+
 ## 🖼️ Application Showcase
 
 | Extension Popup Capture | Multi-Category Knowledge Grid |
@@ -254,18 +300,8 @@ SecondBrain-V3/
 - **Method**: `POST`
 - **Endpoint**: `/api/v1/brain/share`
 - **Auth Required**: Yes (`Authorization: <token>`)
-- **Request Body**:
-```json
-{
-  "share": true
-}
-```
-- **Response**:
-```json
-{
-  "hashVal": "a1b2c3d4e5f67890123456789abcdef0"
-}
-```
+- **Request Body**: `{ "share": true }`
+- **Response**: `{ "hashVal": "a1b2c3d4e5f67890123456789abcdef0" }`
 
 ### 2. View Public Shared Brain Page
 - **Method**: `GET`
@@ -295,13 +331,7 @@ SecondBrain-V3/
 - **Method**: `POST`
 - **Endpoint**: `/api/v1/user/signin`
 - **Auth Required**: No
-- **Request Body**:
-```json
-{
-  "username": "alex",
-  "password": "Password123!"
-}
-```
+- **Request Body**: `{ "username": "alex", "password": "Password123!" }`
 - **Response**:
 ```json
 {
@@ -345,7 +375,7 @@ SecondBrain-V3/
 
 <details>
 <summary><b>1. Extension Not Loading in Chrome</b></summary>
-Ensure you clicked <b>Load unpacked</b> and selected the <code>dist</code> folder inside <code>frontend/chrome-extension/dist</code>, not the main project root folder.
+Ensure you clicked <b>Load unpacked</b> and selected the <code>dist</code> folder inside <code>frontend/chrome-extension/dist</code> (or extracted ZIP folder), not the main project root folder.
 </details>
 
 <details>

@@ -1,6 +1,6 @@
 # SecondBrain V3 - Chrome Extension (Manifest V3)
 
-A powerful, isolated, downloadable Chrome Extension built with **React**, **TypeScript**, **Tailwind CSS**, and **Manifest V3** that connects directly to your existing SecondBrain application.
+A powerful, isolated, downloadable Chrome Extension built with **React**, **TypeScript**, **Tailwind CSS**, and **Manifest V3** that connects directly to your production SecondBrain application.
 
 ---
 
@@ -38,75 +38,41 @@ A powerful, isolated, downloadable Chrome Extension built with **React**, **Type
    - Automatically synchronizes when connectivity is restored or on periodic background alarms.
 
 9. **Settings & Themes**
-   - Configurable Backend Host URL (Default: `http://localhost:3000`).
+   - Configurable Backend Host URL (Default: `https://secondbrain-v3-main.onrender.com`).
    - Dark, Light, and System Theme support.
 
 ---
 
-## 📁 Directory Structure
+## 📦 Downloading & Installing the Extension
 
-```
-frontend/chrome-extension/
-├── manifest.json            # Manifest V3 extension configuration
-├── index.html               # Popup HTML root
-├── options.html             # Options page HTML root
-├── vite.config.ts           # Vite build config with asset copy plugin
-├── tailwind.config.js       # Tailwind CSS theme configuration
-├── postcss.config.js        # PostCSS configuration
-├── package.json             # NPM dependencies & scripts
-├── src/
-│   ├── assets/              # Extension icons (16x16, 32x32, 48x48, 128x128)
-│   ├── background/          # Service Worker background script
-│   ├── content/             # Webpage content script (metadata extractor)
-│   ├── hooks/               # Custom React hooks (useAuth, useCurrentTab, etc.)
-│   ├── options/             # Settings UI page
-│   ├── popup/               # Extension popup UI & subcomponents
-│   ├── services/            # API, Auth, Content, & Offline services
-│   ├── storage/             # chrome.storage.local wrapper
-│   ├── types/               # TypeScript type definitions
-│   └── utils/               # Metadata extractor & helpers
-└── README.md
-```
+Users can install the extension in **Developer Mode** without needing Node.js or local backend servers:
+
+1. **Download Pre-built ZIP**: Download `secondbrain-extension.zip` from GitHub Releases.
+2. **Extract ZIP**: Extract the archive to a folder on your computer.
+3. **Open Chrome Extensions**: Go to `chrome://extensions` in Google Chrome.
+4. **Enable Developer Mode**: Turn **ON** Developer Mode in the top-right corner.
+5. **Click "Load Unpacked"**: Click **Load unpacked** in the top-left corner and select the extracted `dist` folder.
 
 ---
 
-## 🚀 Installation & Local Development
+## 🛠️ Building From Source Code
 
-### 1. Install Dependencies
+If you want to build the extension bundle from source code:
 
-Navigate to the extension directory:
 ```bash
 cd frontend/chrome-extension
 npm install
-```
-
-### 2. Build Extension Bundle
-
-Run the production build command:
-```bash
 npm run build
 ```
+
 This compiles TypeScript, bundles React components, processes Tailwind CSS, and outputs the final extension files into `frontend/chrome-extension/dist/`.
 
----
-
-## 🧩 Loading Unpacked Extension in Chrome
-
-1. Open **Google Chrome** and navigate to `chrome://extensions`.
-2. Toggle **Developer mode** in the top-right corner.
-3. Click the **Load unpacked** button in the top-left corner.
-4. Select the directory:
-   `d:\SecondBrain\SecondBrain-V3-main\frontend\chrome-extension\dist`
-5. The **SecondBrain** extension icon will now appear in your Chrome toolbar!
-
----
-
-## 📦 Production Packaging
-
-To prepare the extension for distribution (e.g. Chrome Web Store or sharing with team):
-
-1. Run `npm run build`.
-2. Compress the contents of the `dist/` directory into a `.zip` file:
-   - On Windows: Right-click `dist` folder $\rightarrow$ Send to $\rightarrow$ Compressed (zipped) folder.
-   - On macOS/Linux: `cd dist && zip -r ../secondbrain-extension.zip .`
-3. Upload the resulting `.zip` file to Chrome Web Store Developer Dashboard.
+To package the compiled extension into a downloadable ZIP:
+- **Windows (PowerShell)**:
+  ```powershell
+  Compress-Archive -Path dist\* -DestinationPath secondbrain-extension.zip -Force
+  ```
+- **macOS/Linux**:
+  ```bash
+  cd dist && zip -r ../secondbrain-extension.zip . && cd ..
+  ```
