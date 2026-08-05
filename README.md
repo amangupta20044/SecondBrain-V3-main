@@ -8,7 +8,7 @@
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248.svg)](https://www.mongodb.com/)
 [![License: ISC](https://img.shields.io/badge/License-ISC-brightgreen.svg)](https://opensource.org/licenses/ISC)
 
-> **SecondBrain V3** is an enterprise-grade knowledge management platform and **Manifest V3 Chrome Extension**. It enables users to capture, organize, summarize, and semantically search web links, articles, YouTube videos, and tweets seamlessly from their browser into a personal digital knowledge base.
+> **SecondBrain V3** is an enterprise-grade knowledge management platform and **Manifest V3 Chrome Extension**. It enables users to capture, organize, summarize, share publicly, and semantically search web links, articles, YouTube videos, and tweets seamlessly from their browser into a personal digital knowledge base.
 
 ![SecondBrain V3 Main Application Interface](frontend/public/home.png)
 *Figure 1: SecondBrain V3 Web Application Dashboard featuring a clean dark mode UI, sidebar navigation, and AI vector search bar.*
@@ -18,10 +18,10 @@
 ## 🎯 Executive Overview
 
 ### The Problem
-Modern internet users consume hundreds of articles, research papers, YouTube videos, and tweets daily. Knowledge is fragmented across browser bookmarks, reading lists, chat threads, and physical notes. Existing tools require manual copy-pasting, lack intelligent duplicate detection, fail when internet connection drops, and do not offer AI-assisted summarization or vector similarity search.
+Modern internet users consume hundreds of articles, research papers, YouTube videos, and tweets daily. Knowledge is fragmented across browser bookmarks, reading lists, chat threads, and physical notes. Existing tools require manual copy-pasting, lack intelligent duplicate detection, fail when internet connection drops, and do not offer AI-assisted summarization, public knowledge sharing, or vector similarity search.
 
 ### The Solution
-**SecondBrain V3** solves knowledge fragmentation by pairing a responsive React Web Application with a Manifest V3 Chrome Extension. Users can capture any tab with a single click or keyboard shortcut (`Ctrl+Shift+S`). The system automatically extracts OpenGraph metadata, checks for duplicates, queues items offline when network connection is unavailable, and synchronizes with a central Express/MongoDB backend equipped with OpenAI embeddings and Google Gemini summarization.
+**SecondBrain V3** solves knowledge fragmentation by pairing a responsive React Web Application with a Manifest V3 Chrome Extension. Users can capture any tab with a single click or keyboard shortcut (`Ctrl+Shift+S`). The system automatically extracts OpenGraph metadata, checks for duplicates, queues items offline when network connection is unavailable, enables public brain sharing via cryptographically secure hash URLs, and synchronizes with a central Express/MongoDB backend equipped with OpenAI embeddings and Google Gemini summarization.
 
 ---
 
@@ -32,14 +32,14 @@ Modern internet users consume hundreds of articles, research papers, YouTube vid
 | ![Extension Popup UI](frontend/public/extention.click.png) | ![Saved Links & Content Cards](frontend/public/links.png) |
 | *One-click tab saver with metadata pre-filling & category picker* | *Responsive 3-column grid displaying links, tags, and domain badges* |
 
-| YouTube AI Summarization | Main Web Application Dashboard |
+| YouTube AI Summarization | Public Brain Share Feature |
 | :---: | :---: |
-| ![YouTube Video Cards & AI Summary](frontend/public/youtube.png) | ![Home Dashboard Overview](frontend/public/home.png) |
-| *Embedded YouTube video player cards & AI transcript summarizer* | *Central knowledge repository with sidebar navigation and search* |
+| ![YouTube Video Cards & AI Summary](frontend/public/youtube.png) | ![Public Shared Knowledge Page](frontend/public/share.png) |
+| *Embedded YouTube video player cards & AI transcript summarizer* | *Public shareable page displaying user's curated brain collection via hash link* |
 
 ---
 
-## ✨ Features
+## ✨ Features & Functionality
 
 ### 1. User Authentication
 - **Purpose**: Authenticate users securely and preserve active session states.
@@ -57,57 +57,72 @@ Modern internet users consume hundreds of articles, research papers, YouTube vid
 - **UX**: Shows a card preview displaying favicon, hostname, URL, pre-filled title, category picker, tag selector, and notes.
 - **Technical Implementation**: Implemented in `SaveTabForm.tsx` and `useCurrentTab.ts`.
 
-### 3. Automated Metadata Extraction
+### 3. Public Knowledge Base Sharing (Hash Link Generation)
+- **Purpose**: Publish and share your SecondBrain knowledge base publicly with team members, friends, or the internet via a unique, secure URL.
+- **Workflow**:
+  1. User toggles **"Share Brain"** in the web dashboard.
+  2. The backend route `POST /api/v1/brain/share` receives `{ share: true }`, generates a cryptographically secure 16-byte random hex hash using Node.js `crypto.randomBytes(16).toString("hex")`, and stores the mapping in `LinkModel`.
+  3. A shareable link (`/share/:hash`) is generated and copied to the clipboard.
+  4. Anyone opening the shared link accesses `SharePage.tsx` (`GET /api/v1/brain/share/:hash`), which retrieves the user's public knowledge collection read-only without requiring login.
+  5. Toggling "Share Brain" off sends `{ share: false }`, which deletes the hash entry from `LinkModel` and instantly revokes public link access.
+
+![Public Shared Knowledge Page](frontend/public/share.png)
+*Figure 3: Public read-only Share Page displaying the user's shared SecondBrain collection.*
+
+- **UX**: One-click toggle switch, instant share link generation, copy to clipboard, and public read-only page with creator attribution.
+- **Technical Implementation**: `backend/src/routes/brain.ts`, `LinkModel` database schema, `SharePage.tsx`, and `crypto` library.
+
+### 4. Automated Metadata Extraction
 - **Purpose**: Extract high-fidelity metadata (OpenGraph tags, title, favicon, images).
 - **Workflow**: The extension sends a runtime message `EXTRACT_METADATA` to `contentScript.ts`. The content script parses DOM meta tags (`og:title`, `og:description`, `og:image`, `og:type`, `twitter:title`, favicon links) and returns them to the popup.
 - **UX**: Instant pre-filling of page title, description, and website hostname.
 - **Technical Implementation**: `metadataExtractor.ts` running inside DOM context via `contentScript.ts`.
 
-### 4. AI-Powered Summarization
+### 5. AI-Powered Summarization
 - **Purpose**: Generate instant summaries of YouTube videos and long articles.
 - **Workflow**: User clicks the "Summary" button on a video card. The request is routed to `POST /api/v1/content/summarize` which uses Google Gemini & YouTube Transcript API to fetch transcripts and summarize text.
 
 ![YouTube Video Summarization](frontend/public/youtube.png)
-*Figure 3: Rich embedded YouTube video player cards with instant AI Summary modal.*
+*Figure 4: Rich embedded YouTube video player cards with instant AI Summary modal.*
 
 - **UX**: Animated spinner during AI processing; opens a clean modal displaying the generated summary.
 - **Technical Implementation**: Reuses backend route `contentRouter.post("/summarize")` integrated with `ContentService.summarizeUrl()`.
 
-### 5. Multi-Category Knowledge Grid
+### 6. Multi-Category Knowledge Grid
 - **Purpose**: Classify content types for filtering and visual rendering.
 - **Workflow**: Auto-detects URL patterns (`youtube.com` $\rightarrow$ `video`, `twitter.com`/`x.com` $\rightarrow$ `tweet`, image URLs $\rightarrow$ `image`, blog URLs $\rightarrow$ `article`, general URLs $\rightarrow$ `link`).
 
 ![Saved Links Grid View](frontend/public/links.png)
-*Figure 4: Filtered view showing saved web bookmarks, domain badges, action buttons, and custom tags.*
+*Figure 5: Filtered view showing saved web bookmarks, domain badges, action buttons, and custom tags.*
 
 - **UX**: Filter by category (Links, Videos, Tweets, Articles, Images) with responsive 3-column card alignment.
 - **Technical Implementation**: `CardComponent.tsx` and `detectCategoryFromUrl()` utility function.
 
-### 6. Offline Queue & Automatic Sync
+### 7. Offline Queue & Automatic Sync
 - **Purpose**: Guarantee zero data loss when working offline or during server downtime.
 - **Workflow**: If a network request fails or `navigator.onLine` is false, `OfflineService.enqueue()` saves the request payload into `chrome.storage.local`. When internet connection returns, `OfflineService.syncQueue()` automatically flushes the queue to the backend.
 - **UX**: Top banner displays network status and pending item count (e.g. `Offline Mode (3 pending)`), with a manual "Sync Now" button.
 - **Technical Implementation**: `OfflineService` (`src/services/offline.ts`), `useOfflineQueue` hook, `window.addEventListener('online')`, and background alarm sync.
 
-### 7. Duplicate Detection
+### 8. Duplicate Detection
 - **Purpose**: Prevent cluttering the database with duplicate URL entries.
 - **Workflow**: On tab capture, the extension fetches existing user content from `GET /api/v1/user/contents?userID={id}` and compares normalized URLs.
 - **UX**: Displays an amber warning banner: `Already saved in SecondBrain! Saved as: "..."`.
 - **Technical Implementation**: `ContentService.checkDuplicate()` comparing sanitized URLs.
 
-### 8. Tag Selector & Dynamic Creation
+### 9. Tag Selector & Dynamic Creation
 - **Purpose**: Organize content using tags.
 - **Workflow**: Fetches existing global tags via `GET /api/v1/tag/alltags`. Allows multi-selecting tags or typing a new tag title which calls `POST /api/v1/tag/createtag`.
 - **UX**: Interactive hashtag pills with instant creation input.
 - **Technical Implementation**: `TagSelector.tsx` integrated with `ContentService`.
 
-### 9. Context Menu Integration
+### 10. Context Menu Integration
 - **Purpose**: Quick save without opening extension popup.
 - **Workflow**: Right-clicking a page or link shows "Save to SecondBrain". The background service worker receives `chrome.contextMenus.onClicked`, extracts tab info, reads JWT, saves content, and triggers desktop notifications (`chrome.notifications`).
 - **UX**: OS native desktop notification (`✔ Saved successfully: "..."`).
 - **Technical Implementation**: `chrome.contextMenus.create` in `serviceWorker.ts`.
 
-### 10. Global Keyboard Shortcut
+### 11. Global Keyboard Shortcut
 - **Purpose**: Save current page instantly via keyboard.
 - **Workflow**: User presses `Ctrl+Shift+S` (or `Cmd+Shift+S`). Chrome triggers `chrome.commands.onCommand`, caught in `serviceWorker.ts`.
 - **UX**: Instant desktop notification feedback.
@@ -172,10 +187,11 @@ SecondBrain-V3/
 │   │   ├── extention.click.png          # Screenshot: Chrome Extension Popup UI
 │   │   ├── home.png                     # Screenshot: Web App Main Dashboard
 │   │   ├── links.png                    # Screenshot: Saved Links & Content Cards Grid
+│   │   ├── share.png                    # Screenshot: Public Brain Share Page
 │   │   └── youtube.png                  # Screenshot: Embedded YouTube Cards & AI Summary
 │   ├── src/
 │   │   ├── components/                  # CardComponent, Dashboard, Forms, Layouts
-│   │   ├── pages/                       # Login, Signup, Home, Landing, Share pages
+│   │   ├── pages/                       # Login, Signup, Home, Landing, SharePage
 │   │   ├── store/                       # Redux Toolkit store & slices
 │   │   └── utils/                       # Route API endpoints configuration
 │   ├── package.json
@@ -230,125 +246,52 @@ SecondBrain-V3/
 | **bcryptjs** | `2.4.3` | Password Hashing |
 | **Zod** | `3.24.1` | Request Body Validation |
 
-### Chrome APIs
-
-| API | Extension Purpose |
-| :--- | :--- |
-| **`chrome.tabs`** | Query active tab URL, title, and favicon |
-| **`chrome.storage.local`** | Secure token, user session, and offline queue storage |
-| **`chrome.runtime`** | Cross-script message passing and options page navigation |
-| **`chrome.contextMenus`** | Right-click context menu "Save to SecondBrain" |
-| **`chrome.commands`** | Keyboard shortcut listener (`Ctrl+Shift+S`) |
-| **`chrome.alarms`** | Periodic background offline queue synchronization |
-| **`chrome.notifications`** | OS desktop feedback notifications |
-| **`chrome.action`** | Browser toolbar icon & popup trigger |
-
----
-
-## 🔄 Extension Workflow
-
-```text
-User Presses Ctrl+Shift+S / Click Save
-   │
-   ▼
-Check Auth State (chrome.storage.local) ───[Unauthenticated]───► Render LoginForm
-   │ [Authenticated]
-   ▼
-Extract Tab Metadata (chrome.tabs + ContentScript)
-   │ (URL, Title, Favicon, Hostname, OpenGraph tags)
-   ▼
-Run Duplicate Detection Check (GET /api/v1/user/contents)
-   │
-   ├──────[URL Exists]────────► Display Duplicate Warning Banner
-   │
-   ▼
-Auto-Detect Category (video / tweet / article / image / link)
-   │
-   ▼
-User Edits Title / Tags / Notes / Clicks "AI Summarize"
-   │
-   ▼
-Click "Save to SecondBrain"
-   │
-   ├───[Network Available]────► POST /api/v1/content/create ──► Show "✔ Saved Successfully"
-   │
-   └───[Network Unavailable]──► Enqueue to chrome.storage.local ──► Show "Offline Saved"
-                                      │
-                                      ▼
-                               Auto-Sync when Internet Returns
-```
-
----
-
-## 📥 Installation & Setup
-
-### 1. Prerequisites
-- **Node.js**: v18+ or v20+ LTS
-- **npm**: v9+ or v10+
-- **MongoDB**: Running instance locally or via MongoDB Atlas
-
-### 2. Repository Setup
-
-```bash
-# Clone repository
-git clone https://github.com/amangupta20044/SecondBrain-V3-main.git
-cd SecondBrain-V3-main
-```
-
-### 3. Backend Setup
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-```
-
-Configure `backend/.env`:
-```env
-PORT=3000
-MONGO_URI=mongodb://127.0.0.1:27017/secondbrain
-USER_JWT_SECRET=super_secret_jwt_key_change_in_production
-OPENAI_API_KEY=your_openai_api_key_here
-GEMINI_API_KEY=your_google_gemini_api_key_here
-SHARABLE_LINK_HOST=http://localhost:3000
-```
-
-Start backend development server:
-```bash
-npm run dev
-```
-
-### 4. Web Application Setup
-
-```bash
-# Open new terminal
-cd frontend
-npm install
-npm run dev
-```
-> Access the web application in your browser at `http://localhost:5173`.
-
-### 5. Chrome Extension Setup & Loading
-
-```bash
-# Open new terminal
-cd frontend/chrome-extension
-npm install
-npm run build
-```
-
-#### Load Unpacked Extension into Chrome:
-1. Open Google Chrome and navigate to `chrome://extensions`.
-2. Enable **Developer mode** (top-right toggle).
-3. Click **Load unpacked** (top-left button).
-4. Select directory: `D:\SecondBrain\SecondBrain-V3-main\frontend\chrome-extension\dist`.
-5. Pin the **SecondBrain** icon to your toolbar.
-
 ---
 
 ## 🔌 API Integration
 
-### 1. User Signin
+### 1. Toggle Public Brain Sharing
+- **Method**: `POST`
+- **Endpoint**: `/api/v1/brain/share`
+- **Auth Required**: Yes (`Authorization: <token>`)
+- **Request Body**:
+```json
+{
+  "share": true
+}
+```
+- **Response**:
+```json
+{
+  "hashVal": "a1b2c3d4e5f67890123456789abcdef0"
+}
+```
+
+### 2. View Public Shared Brain Page
+- **Method**: `GET`
+- **Endpoint**: `/api/v1/brain/share/a1b2c3d4e5f67890123456789abcdef0`
+- **Auth Required**: No (Public Access)
+- **Response**:
+```json
+{
+  "user": {
+    "_id": "65b2a1f8e4b0123456789abc",
+    "username": "alex"
+  },
+  "sharedContents": [
+    {
+      "_id": "65b2a333e4b0123456789ghi",
+      "link": "https://github.com",
+      "type": "link",
+      "title": "GitHub",
+      "description": "Saved link",
+      "tags": []
+    }
+  ]
+}
+```
+
+### 3. User Signin
 - **Method**: `POST`
 - **Endpoint**: `/api/v1/user/signin`
 - **Auth Required**: No
@@ -371,7 +314,7 @@ npm run build
 }
 ```
 
-### 2. Save Content
+### 4. Save Content
 - **Method**: `POST`
 - **Endpoint**: `/api/v1/content/create`
 - **Auth Required**: Yes (`Authorization: <token>`)
@@ -386,85 +329,15 @@ npm run build
   "userId": "65b2a1f8e4b0123456789abc"
 }
 ```
-- **Response**:
-```json
-{
-  "message": "Content created",
-  "content": {
-    "_id": "65b2a333e4b0123456789ghi",
-    "link": "https://github.com",
-    "type": "link",
-    "title": "GitHub: Where the world builds software",
-    "description": "Saved via SecondBrain Chrome Extension",
-    "tags": ["65b2a222e4b0123456789def"],
-    "date": 1770281400000,
-    "userId": "65b2a1f8e4b0123456789abc"
-  }
-}
-```
-
-### 3. Fetch User Contents
-- **Method**: `GET`
-- **Endpoint**: `/api/v1/user/contents?userID=65b2a1f8e4b0123456789abc`
-- **Auth Required**: Yes (`Authorization: <token>`)
-- **Response**:
-```json
-[
-  {
-    "_id": "65b2a333e4b0123456789ghi",
-    "link": "https://github.com",
-    "type": "link",
-    "title": "GitHub",
-    "description": "Saved link",
-    "tags": [{ "_id": "65b2a222e4b0123456789def", "title": "coding" }]
-  }
-]
-```
-
-### 4. AI Summarization
-- **Method**: `POST`
-- **Endpoint**: `/api/v1/content/summarize`
-- **Auth Required**: Yes
-- **Request Body**: `{ "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }`
-- **Response**: `{ "data": "Summary text generated by AI..." }`
 
 ---
 
 ## 🔒 Security Architecture
 
 1. **JWT Storage**: JWT tokens are stored securely inside Chrome's isolated `chrome.storage.local` engine and never written to cookies or unencrypted local storage.
-2. **Dynamic CORS Whitelisting**: `backend/src/index.ts` validates incoming origin headers and explicitly permits `chrome-extension://` protocol origins.
-3. **Manifest V3 Content Security Policy (CSP)**: Disallows inline scripts, evaluated strings (`eval`), and remote script loading.
-4. **Input Validation**: All user inputs undergo Zod schema parsing before database queries.
-
----
-
-## 📶 Offline Queue Architecture
-
-```text
-       [Network Failure / Offlining Detected]
-                         │
-                         ▼
-        OfflineService.enqueue(savePayload)
-                         │
-                         ▼
-     Payload persisted to chrome.storage.local
-                         │
-                         ▼
-      User notified: "Saved to Offline Queue"
-                         │
-                         ▼
-       [Network Connectivity Restored]
-                         │
-                         ▼
-        OfflineService.syncQueue() triggers
-                         │
-                         ▼
-     Payloads pushed to POST /api/v1/content/create
-                         │
-                         ▼
-      Queue cleared & Desktop notification sent
-```
+2. **Cryptographic Share Links**: Shared links use 16-byte cryptographically strong pseudo-random hex strings generated via Node.js `crypto`.
+3. **Dynamic CORS Whitelisting**: `backend/src/index.ts` validates incoming origin headers and explicitly permits `chrome-extension://` protocol origins.
+4. **Manifest V3 Content Security Policy (CSP)**: Disallows inline scripts, evaluated strings (`eval`), and remote script loading.
 
 ---
 
@@ -487,26 +360,9 @@ Verify your backend is running and `backend/src/index.ts` allows `chrome-extensi
 
 ---
 
-## 🗺️ Roadmap
-
-- [x] Manifest V3 Extension Architecture
-- [x] Automated OpenGraph Metadata Extraction
-- [x] Offline Queue & Auto-Sync
-- [x] Duplicate URL Detection
-- [x] AI YouTube & Article Summarizer
-- [ ] Firefox WebExtension Compatibility
-- [ ] Full-text OCR on image attachments
-
----
-
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
+Contributions are welcome! Please feel free to open a Pull Request or submit an issue.
 
 ---
 
