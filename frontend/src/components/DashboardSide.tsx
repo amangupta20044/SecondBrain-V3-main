@@ -144,7 +144,7 @@ export function DashboardSide() {
 export const Logo = () => {
   return (
     <Link
-      to="/"
+      to=""
       className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
     >
       <BrainCircuitIcon color="#ffffff" />
