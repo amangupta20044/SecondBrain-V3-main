@@ -12,7 +12,7 @@ export const Options: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { queueCount, syncQueue, syncing } = useOfflineQueue();
 
-  const [backendUrl, setBackendUrl] = useState('http://localhost:3000');
+  const [backendUrl, setBackendUrl] = useState('https://secondbrain-v3-main.onrender.com');
   const [savedUrlMsg, setSavedUrlMsg] = useState(false);
   const [clearedStorageMsg, setClearedStorageMsg] = useState(false);
 

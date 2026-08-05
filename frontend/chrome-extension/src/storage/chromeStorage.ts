@@ -1,6 +1,6 @@
 import { StorageData, User, ThemeMode, OfflineQueueItem } from '../types';
 
-const DEFAULT_BACKEND_URL = 'http://localhost:3000';
+const DEFAULT_BACKEND_URL = 'https://secondbrain-v3-main.onrender.com';
 
 export class ChromeStorage {
   private static isChromeStorageAvailable(): boolean {
