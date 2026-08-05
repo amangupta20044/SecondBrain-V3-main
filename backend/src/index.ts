@@ -43,6 +43,7 @@ app.use(helmet({
 const defaultAllowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
+  "https://second-brain-v3-main.vercel.app",
   "https://second-brain-wine-sigma.vercel.app"
 ];
 
@@ -62,7 +63,7 @@ app.use(
       // Allow requests with no origin (like mobile apps, curl, or server-to-server)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
         return callback(null, true);
       }
 
