@@ -25,6 +25,10 @@ Modern internet users consume hundreds of articles, research papers, YouTube vid
 
 ---
 
+## 🎥 Project Demo
+
+[Watch the Project Demo](https://drive.google.com/file/d/1rJVoUFjZLPtvjAFyxCb_Ry4s3SrEAeiT/view?usp=sharing)
+
 ## 📦 Download Chrome Extension
 
 You can download and install the **SecondBrain Chrome Extension** using either of the following two options:
